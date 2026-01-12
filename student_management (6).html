@@ -1,0 +1,409 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2305-2306班学生管理系统</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    body {
+      background: linear-gradient(to right, #4facfe, #00f2fe);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .table-container {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .header-bg {
+      background: linear-gradient(to right, #1e40af, #3b82f6);
+    }
+    .btn-primary {
+      background: linear-gradient(to right, #1d4ed8, #2563eb);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(to right, #1e40af, #1d4ed8);
+    }
+    .stat-card {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="header-bg shadow-md py-4">
+    <div class="container mx-auto px-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-white">2305-2306班学生管理系统</h1>
+      <div class="text-sm text-blue-100">版权所有 © 付佳伟</div>
+    </div>
+  </header>
+
+  <main class="flex-grow container mx-auto px-4 py-8">
+    <div id="login-section" class="max-w-md mx-auto bg-white bg-opacity-90 p-8 rounded-xl shadow-lg">
+      <h2 class="text-xl font-semibold text-center mb-6 text-blue-800">系统登录</h2>
+      <div class="mb-4">
+        <label class="block text-blue-700 mb-2">密码</label>
+        <input type="password" id="password" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+      <button onclick="login()" class="w-full btn-primary text-white py-2 rounded-lg hover:shadow-lg transition">登录</button>
+      <p id="login-error" class="text-red-500 text-sm mt-2 hidden">密码错误，请重试。</p>
+    </div>
+
+    <div id="main-app" class="hidden">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-semibold text-white">学生信息管理</h2>
+        <div class="flex gap-2">
+          <button onclick="showAddForm()" class="btn-primary text-white px-4 py-2 rounded-lg hover:shadow-lg transition flex items-center">
+            <i class="fas fa-plus mr-2"></i> 添加学生
+          </button>
+          <button onclick="document.getElementById('import-modal').classList.remove('hidden')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition flex items-center">
+            <i class="fas fa-file-import mr-2"></i> 导入表格
+          </button>
+        </div>
+      </div>
+
+      <div class="mb-6 flex flex-wrap gap-4">
+        <input type="text" id="search-input" placeholder="搜索姓名、学号或专业..." class="px-4 py-2 border rounded-lg flex-grow">
+        <button onclick="searchStudents()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">搜索</button>
+        <button onclick="resetView()" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition">重置</button>
+      </div>
+
+      <div class="bg-white bg-opacity-30 rounded-xl shadow-lg p-6 mb-6 stat-card">
+        <h3 class="text-lg font-semibold mb-4 text-white">学生统计</h3>
+        <div class="flex flex-wrap gap-4">
+          <div class="bg-blue-100 bg-opacity-80 p-4 rounded-lg flex-1 min-w-[200px]">
+            <p class="text-blue-800 font-semibold">总学生数</p>
+            <p class="text-2xl font-bold text-blue-600" id="total-count">0</p>
+          </div>
+          <div class="bg-green-100 bg-opacity-80 p-4 rounded-lg flex-1 min-w-[200px]">
+            <p class="text-green-800 font-semibold">2305班</p>
+            <p class="text-2xl font-bold text-green-600" id="class2305-count">0</p>
+          </div>
+          <div class="bg-purple-100 bg-opacity-80 p-4 rounded-lg flex-1 min-w-[200px]">
+            <p class="text-purple-800 font-semibold">2306班</p>
+            <p class="text-2xl font-bold text-purple-600" id="class2306-count">0</p>
+          </div>
+          <div class="bg-red-100 bg-opacity-80 p-4 rounded-lg flex-1 min-w-[200px]">
+            <p class="text-red-800 font-semibold">贫困生人数</p>
+            <p class="text-2xl font-bold text-red-600" id="poor-count">0</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container bg-white bg-opacity-30 rounded-xl shadow-lg stat-card">
+        <table class="min-w-full">
+          <thead class="bg-blue-500 bg-opacity-50 text-white">
+            <tr>
+              <th class="py-3 px-4 text-left">姓名</th>
+              <th class="py-3 px-4 text-left">学号</th>
+              <th class="py-3 px-4 text-left">班级</th>
+              <th class="py-3 px-4 text-left">专业</th>
+              <th class="py-3 px-4 text-left">年龄</th>
+              <th class="py-3 px-4 text-left">政治面貌</th>
+              <th class="py-3 px-4 text-left">是否贫困生</th>
+              <th class="py-3 px-4 text-left">贫困等级</th>
+              <th class="py-3 px-4 text-left">操作</th>
+            </tr>
+          </thead>
+          <tbody id="student-table-body" class="bg-white bg-opacity-70">
+            <!-- 数据将通过JS动态生成 -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 添加/编辑表单 -->
+      <div id="student-form-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-xl w-full max-w-md">
+          <h3 id="form-title" class="text-xl font-semibold mb-4 text-blue-800">添加学生</h3>
+          <form id="student-form">
+            <input type="hidden" id="edit-id">
+            <div class="mb-4">
+              <label class="block text-blue-700 mb-2">姓名</label>
+              <input type="text" id="name" class="w-full px-4 py-2 border rounded-lg" required>
+            </div>
+            <div class="mb-4">
+              <label class="block text-blue-700 mb-2">学号</label>
+              <input type="text" id="student-id" class="w-full px-4 py-2 border rounded-lg" required>
+            </div>
+            <div class="mb-4">
+              <label class="block text-blue-700 mb-2">班级</label>
+              <select id="class" class="w-full px-4 py-2 border rounded-lg">
+                <option value="2305">2305班</option>
+                <option value="2306">2306班</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="block text-blue-700 mb-2">专业</label>
+              <input type="text" id="major" class="w-full px-4 py-2 border rounded-lg" required>
+            </div>
+            <div class="mb-4">
+              <label class="block text-blue-700 mb-2">年龄</label>
+              <input type="number" id="age" class="w-full px-4 py-2 border rounded-lg" required min="15" max="30">
+            </div>
+            <div class="mb-4">
+              <label class="block text-blue-700 mb-2">政治面貌</label>
+              <select id="political-status" class="w-full px-4 py-2 border rounded-lg">
+                <option value="群众">群众</option>
+                <option value="共青团员">共青团员</option>
+                <option value="共产党员">共产党员</option>
+                <option value="民主党派">民主党派</option>
+              </select>
+            </div>
+            <div class="mb-4">
+              <label class="block text-blue-700 mb-2">是否为贫困生</label>
+              <select id="is-poor" class="w-full px-4 py-2 border rounded-lg">
+                <option value="否">否</option>
+                <option value="是">是</option>
+              </select>
+            </div>
+            <div class="mb-4" id="poverty-level-container" style="display: none;">
+              <label class="block text-blue-700 mb-2">贫困等级</label>
+              <select id="poverty-level" class="w-full px-4 py-2 border rounded-lg">
+                <option value="一般贫困">一般贫困</option>
+                <option value="困难">困难</option>
+                <option value="特别困难">特别困难</option>
+              </select>
+            </div>
+            <div class="flex justify-end gap-2">
+              <button type="button" onclick="closeForm()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">取消</button>
+              <button type="submit" class="btn-primary text-white px-4 py-2 rounded-lg hover:shadow-lg transition">保存</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- 导入表格模态框 -->
+      <div id="import-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-xl w-full max-w-md">
+          <h3 class="text-xl font-semibold mb-4 text-blue-800">导入学生数据</h3>
+          <div class="mb-4">
+            <label class="block text-blue-700 mb-2">选择Excel文件</label>
+            <input type="file" id="excel-file" accept=".xlsx,.xls" class="w-full px-4 py-2 border rounded-lg">
+            <p class="text-sm text-gray-500 mt-2">支持.xls和.xlsx格式，需包含：姓名、学号、班级、专业、年龄、政治面貌、是否贫困生、贫困等级等列</p>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button onclick="document.getElementById('import-modal').classList.add('hidden')" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">取消</button>
+            <button onclick="importExcel()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">导入</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-blue-800 bg-opacity-80 py-4 text-center text-blue-100 text-sm">
+    版权所有 © 2026 付佳伟
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    const correctPassword = "20250826";
+    let students = JSON.parse(localStorage.getItem('students')) || [];
+
+    // 贫困生选择联动
+    document.getElementById('is-poor').addEventListener('change', function() {
+      const povertyLevelContainer = document.getElementById('poverty-level-container');
+      if (this.value === '是') {
+        povertyLevelContainer.style.display = 'block';
+      } else {
+        povertyLevelContainer.style.display = 'none';
+      }
+    });
+
+    function login() {
+      const password = document.getElementById('password').value;
+      if (password === correctPassword) {
+        document.getElementById('login-section').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        renderStudents();
+        updateStatistics();
+      } else {
+        document.getElementById('login-error').classList.remove('hidden');
+      }
+    }
+
+    function renderStudents(filtered = students) {
+      const tbody = document.getElementById('student-table-body');
+      tbody.innerHTML = '';
+      filtered.forEach((student, index) => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-blue-50';
+        row.innerHTML = `
+          <td class="py-3 px-4">${student.name}</td>
+          <td class="py-3 px-4">${student.id}</td>
+          <td class="py-3 px-4">${student.class}班</td>
+          <td class="py-3 px-4">${student.major}</td>
+          <td class="py-3 px-4">${student.age}</td>
+          <td class="py-3 px-4">${student.politicalStatus}</td>
+          <td class="py-3 px-4">${student.isPoor || '否'}</td>
+          <td class="py-3 px-4">${student.povertyLevel || '-'}</td>
+          <td class="py-3 px-4">
+            <button onclick="editStudent(${index})" class="text-blue-600 hover:text-blue-800 mr-2">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button onclick="deleteStudent(${index})" class="text-red-600 hover:text-red-800">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function updateStatistics() {
+      const total = students.length;
+      const class2305 = students.filter(s => s.class === '2305').length;
+      const class2306 = students.filter(s => s.class === '2306').length;
+      const poorCount = students.filter(s => s.isPoor === '是').length;
+      
+      document.getElementById('total-count').textContent = total;
+      document.getElementById('class2305-count').textContent = class2305;
+      document.getElementById('class2306-count').textContent = class2306;
+      document.getElementById('poor-count').textContent = poorCount;
+    }
+
+    function showAddForm() {
+      document.getElementById('form-title').textContent = '添加学生';
+      document.getElementById('student-form').reset();
+      document.getElementById('edit-id').value = '';
+      document.getElementById('poverty-level-container').style.display = 'none';
+      document.getElementById('student-form-modal').classList.remove('hidden');
+    }
+
+    function closeForm() {
+      document.getElementById('student-form-modal').classList.add('hidden');
+    }
+
+    function editStudent(index) {
+      const student = students[index];
+      document.getElementById('form-title').textContent = '编辑学生';
+      document.getElementById('name').value = student.name;
+      document.getElementById('student-id').value = student.id;
+      document.getElementById('class').value = student.class;
+      document.getElementById('major').value = student.major;
+      document.getElementById('age').value = student.age;
+      document.getElementById('political-status').value = student.politicalStatus;
+      document.getElementById('is-poor').value = student.isPoor || '否';
+      
+      // 处理贫困生相关字段显示
+      if (student.isPoor === '是') {
+        document.getElementById('poverty-level-container').style.display = 'block';
+        document.getElementById('poverty-level').value = student.povertyLevel || '一般贫困';
+      } else {
+        document.getElementById('poverty-level-container').style.display = 'none';
+      }
+      
+      document.getElementById('edit-id').value = index;
+      document.getElementById('student-form-modal').classList.remove('hidden');
+    }
+
+    document.getElementById('student-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const index = document.getElementById('edit-id').value;
+      const student = {
+        name: document.getElementById('name').value,
+        id: document.getElementById('student-id').value,
+        class: document.getElementById('class').value,
+        major: document.getElementById('major').value,
+        age: parseInt(document.getElementById('age').value),
+        politicalStatus: document.getElementById('political-status').value,
+        isPoor: document.getElementById('is-poor').value,
+        povertyLevel: document.getElementById('is-poor').value === '是' ? document.getElementById('poverty-level').value : null
+      };
+
+      if (index === '') {
+        students.push(student);
+      } else {
+        students[index] = student;
+      }
+
+      localStorage.setItem('students', JSON.stringify(students));
+      renderStudents();
+      updateStatistics();
+      closeForm();
+    });
+
+    function deleteStudent(index) {
+      if (confirm('确定要删除该学生信息吗？')) {
+        students.splice(index, 1);
+        localStorage.setItem('students', JSON.stringify(students));
+        renderStudents();
+        updateStatistics();
+      }
+    }
+
+    function searchStudents() {
+      const keyword = document.getElementById('search-input').value.toLowerCase();
+      const filtered = students.filter(s => 
+        s.name.toLowerCase().includes(keyword) || 
+        s.id.includes(keyword) ||
+        s.major.toLowerCase().includes(keyword)
+      );
+      renderStudents(filtered);
+    }
+
+    function resetView() {
+      document.getElementById('search-input').value = '';
+      renderStudents();
+    }
+
+    function importExcel() {
+      const fileInput = document.getElementById('excel-file');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        alert('请选择一个Excel文件');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, {type: 'array'});
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+          
+          // 转换数据格式
+          const importedStudents = jsonData.map(row => ({
+            name: row['姓名'] || row['name'] || '',
+            id: row['学号'] || row['id'] || '',
+            class: row['班级'] || row['class'] || '',
+            major: row['专业'] || row['major'] || '',
+            age: parseInt(row['年龄'] || row['age']) || 18,
+            politicalStatus: row['政治面貌'] || row['politicalStatus'] || '群众',
+            isPoor: row['是否贫困生'] || row['isPoor'] || '否',
+            povertyLevel: row['贫困等级'] || row['povertyLevel'] || null
+          })).filter(s => s.name && s.id); // 过滤掉空数据
+
+          if (importedStudents.length === 0) {
+            alert('未找到有效数据，请检查Excel文件格式');
+            return;
+          }
+
+          // 添加到现有数据中
+          students = [...students, ...importedStudents];
+          localStorage.setItem('students', JSON.stringify(students));
+          renderStudents();
+          updateStatistics();
+          document.getElementById('import-modal').classList.add('hidden');
+          fileInput.value = '';
+          alert(`成功导入${importedStudents.length}条学生数据`);
+        } catch (error) {
+          console.error(error);
+          alert('导入失败，请检查文件格式是否正确');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  </script>
+</body>
+</html>
